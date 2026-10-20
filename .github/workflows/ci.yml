@@ -9,16 +9,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
@@ -39,7 +39,7 @@ jobs:
 
       - name: Upload protocol transcript
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: protocol-transcript
           path: protocol-check/build/protocol-transcript.txt
@@ -53,7 +53,7 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: attend-tag-emulator-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk

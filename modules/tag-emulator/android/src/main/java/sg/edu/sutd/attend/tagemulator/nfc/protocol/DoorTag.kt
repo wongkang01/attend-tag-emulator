@@ -38,9 +38,9 @@ class DoorTag(
   /** Signs the next reading (or the previous one again in replay mode) and records it. */
   fun serve(): ServedReading {
     val served = synchronized(this) {
-      val previous = state.lastServedCounter
-      val replay = state.replayArmed && previous != null
-      val counter = if (replay && previous != null) previous else state.nextCounter
+      val replayCounter = state.lastServedCounter?.takeIf { state.replayArmed }
+      val replay = replayCounter != null
+      val counter = replayCounter ?: state.nextCounter
       val now = clock()
       state = state.copy(
         nextCounter = if (replay) state.nextCounter else counter + 1,
