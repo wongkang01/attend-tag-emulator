@@ -1,0 +1,15 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'sg.edu.sutd.attend.tagemulator.nfc'
+version = '0.1.0'
+
+android {
+  namespace "sg.edu.sutd.attend.tagemulator.nfc"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}

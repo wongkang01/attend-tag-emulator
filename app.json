@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Attend Tag",
+    "slug": "attend-tag-emulator",
+    "version": "1.0.0",
+    "platforms": ["android"],
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0d0d0d",
+    "android": {
+      "package": "sg.edu.sutd.attend.tagemulator",
+      "adaptiveIcon": {
+        "backgroundColor": "#0d0d0d",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": ["./modules/tag-emulator/app.plugin.js"]
+  }
+}

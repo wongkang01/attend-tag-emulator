@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attend_tag_service_description">Attend door tag emulator</string>
+    <string name="attend_tag_aid_group_description">NFC Forum Type 4 Tag NDEF application</string>
+</resources>
