@@ -48,13 +48,14 @@ jobs:
       - name: Prebuild Android project
         run: npx expo prebuild -p android --no-install
 
-      - name: Build debug APK
+      # A release build carries its JS bundle, so it runs without a Metro dev server.
+      - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleRelease --no-daemon
 
-      - name: Upload debug APK
+      - name: Upload release APK
         uses: actions/upload-artifact@v7
         with:
-          name: attend-tag-emulator-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: attend-tag-emulator-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error

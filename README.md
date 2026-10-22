@@ -44,9 +44,13 @@ The reader parses `ctr` with `parseInt(ctr, 16)` and compares `uid` and `cmac` c
 
 ## Install
 
-Every push builds a debug APK in GitHub Actions.
-Open the latest green run under the repo's Actions tab, download the `attend-tag-emulator-debug-apk` artifact, unzip it, and install `app-debug.apk` on an Android phone with NFC (allow installs from unknown sources when asked).
-With a USB cable you can also run `adb install app-debug.apk`.
+Every push builds a release APK in GitHub Actions.
+It carries its own JS bundle, so it runs without a Metro dev server.
+Open the latest green run under the repo's Actions tab, download the `attend-tag-emulator-apk` artifact, unzip it, and install `app-release.apk` on an Android phone with NFC (allow installs from unknown sources when asked).
+With a USB cable you can also run `adb install app-release.apk`.
+A debug build (`./gradlew assembleDebug`) needs Metro running and shows "Unable to load script" without it.
+
+The person whose phone acts as the tag during a demo should follow [docs/tag-phone-setup.md](docs/tag-phone-setup.md).
 
 To build with EAS instead, run `npx eas-cli@latest build -p android --profile preview`, which produces an installable APK.
 
