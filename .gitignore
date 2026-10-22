@@ -43,3 +43,6 @@ yarn-error.*
 # protocol check
 .gradle/
 protocol-check/build/
+
+# local module build output
+modules/tag-emulator/android/build/

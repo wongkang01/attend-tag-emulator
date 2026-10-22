@@ -8,9 +8,17 @@ It holds the tag key, and a tag key must never ship inside the student app.
 
 ## The contract
 
-The emulated tag is door "LT2 Door A" with UID `04A1B2C3D45E80`.
-Its key is `6b1f0c2a9d3e4f5061728394a5b6c7d8` (hex).
-This is a public demo key, not a secret; it signs nothing real.
+The phone acts as one of three demo doors, chosen on the app's screen.
+The Attend seed data registers the same three doors.
+
+| Door | UID | Key (hex) | Room |
+|---|---|---|---|
+| LT2 Door A | `04A1B2C3D45E80` | `6b1f0c2a9d3e4f5061728394a5b6c7d8` | LT2 (Lecture Theatre 2) |
+| LT2 Door B | `04A1B2C3D45E81` | `7c2a1d3b0e4f5a6172839405b6c7d8e9` | LT2 (Lecture Theatre 2) |
+| 2.506 Door | `04A1B2C3D45E82` | `8d3b2e4c1f5a6b7283940516c7d8e9fa` | 2.506 (cohort classroom) |
+
+These are public demo keys, not secrets; they sign nothing real.
+LT2 Door A is selected until you pick another door, and the choice survives app restarts.
 
 On every read the tag serves an NDEF message with one URI record (TNF well-known, type `U`, prefix code `0x04` for `https://`):
 
@@ -20,32 +28,40 @@ https://attend.example/t?uid=04A1B2C3D45E80&ctr=<counter, 6 lowercase hex digits
 
 The MAC is the first 8 bytes of HMAC-SHA256(key bytes, UTF-8 of `<UID>:<ctr>`), written as uppercase hex.
 
-| Counter | Signed message | cmac |
-|---|---|---|
-| 42 | `04A1B2C3D45E80:00002a` | `806CDCC0C638BB5C` |
-| 43 | `04A1B2C3D45E80:00002b` | `CE8035914E933928` |
+| Door | Counter | Signed message | cmac |
+|---|---|---|---|
+| LT2 Door A | 42 | `04A1B2C3D45E80:00002a` | `806CDCC0C638BB5C` |
+| LT2 Door A | 43 | `04A1B2C3D45E80:00002b` | `CE8035914E933928` |
+| LT2 Door B | 42 | `04A1B2C3D45E81:00002a` | `51B205217C81A631` |
+| 2.506 Door | 42 | `04A1B2C3D45E82:00002a` | `7E03165A333FF1D2` |
 
-The counter starts at 42, because the Attend mock's seeded data already uses 41.
-It goes up by one for each read, that is each time a reader selects the NDEF file, and it survives app restarts.
+Each door has its own counter.
+Every counter starts at 42, because the Attend mock's seeded data already uses 41.
+A counter goes up by one for each read of its door, that is each time a reader selects the NDEF file, and it survives app restarts.
+Switching doors does not touch the other doors' counters.
 If a reader selects the NDEF file twice while the phones stay together, it gets the same reading both times; the next tap gets the next counter.
 The reader parses `ctr` with `parseInt(ctr, 16)` and compares `uid` and `cmac` case-insensitively.
 
 ## Install
 
-Every push builds a debug APK in GitHub Actions.
-Open the latest green run under the repo's Actions tab, download the `attend-tag-emulator-debug-apk` artifact, unzip it, and install `app-debug.apk` on an Android phone with NFC (allow installs from unknown sources when asked).
-With a USB cable you can also run `adb install app-debug.apk`.
+Every push builds a release APK in GitHub Actions.
+It carries its own JS bundle, so it runs without a Metro dev server.
+Open the latest green run under the repo's Actions tab, download the `attend-tag-emulator-apk` artifact, unzip it, and install `app-release.apk` on an Android phone with NFC (allow installs from unknown sources when asked).
+With a USB cable you can also run `adb install app-release.apk`.
+A debug build (`./gradlew assembleDebug`) needs Metro running and shows "Unable to load script" without it.
+
+The person whose phone acts as the tag during a demo should follow [docs/tag-phone-setup.md](docs/tag-phone-setup.md).
 
 To build with EAS instead, run `npx eas-cli@latest build -p android --profile preview`, which produces an installable APK.
 
 ## Test tap against the Attend app
 
-1. On the tag phone (this app): turn NFC on, open Attend Tag, and keep the screen on and unlocked.
+1. On the tag phone (this app): turn NFC on, open Attend Tag, pick the door under "Act as door", and keep the screen on and unlocked.
 2. On the student phone (iPhone or Android): open Attend and start device capture.
 3. Hold the backs of the two phones together until the student phone reacts.
 4. The tag phone's screen shows the counter it served, the reads served and the time of the last read.
 
-The Attend app should accept the reading and record a tap with counter 42, then 43 on the next tap, and so on.
+The Attend app should accept the reading and record a tap with counter 42, then 43 on the next tap, and so on, for the door you picked.
 
 If Android offers a choice of apps for the tag, pick Attend Tag; another installed app has registered the same NFC application.
 
@@ -57,16 +73,17 @@ If Android offers a choice of apps for the tag, pick Attend Tag; another install
 4. The Attend app should reject it as a replay, because it has already seen that counter.
 
 The switch turns itself off after one replayed read.
-"Reset counter" starts again from 42, which the Attend app will also treat as a replay unless its data is reset too.
+Replay and "Reset counter" act on the selected door only.
+"Reset counter" starts that door again from 42, which the Attend app will also treat as a replay unless its data is reset too.
 
 ## How it is built
 
 - `App.tsx` is the one screen.
 - `modules/tag-emulator` is a local Expo module in Kotlin.
-- `modules/tag-emulator/android/.../nfc/protocol` holds the Type 4 Tag APDU handling, the counter and the MAC in plain Kotlin with no Android dependencies.
+- `modules/tag-emulator/android/.../nfc/protocol` holds the Type 4 Tag APDU handling, the demo doors, the door choice, the counters and the MAC in plain Kotlin with no Android dependencies.
 - `TagApduService` is a thin `HostApduService` wrapper around it, and `TagEmulatorModule` is the bridge to JavaScript.
 - `modules/tag-emulator/app.plugin.js` is the config plugin that adds the service, the NFC permission and the HCE feature to the Android manifest.
-- `protocol-check` is a small JVM program that plays the APDUs a phone reader sends and checks every answer, the test vectors, replay mode, persistence and the status words for bad commands.
+- `protocol-check` is a small JVM program that plays the APDUs a phone reader sends and checks every answer, the test vectors, replay mode, persistence, the door picker and the status words for bad commands.
 
 Run the checks with:
 
