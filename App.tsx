@@ -14,7 +14,7 @@ import {
 
 import TagEmulator, { type NfcStatus, type TagStatus } from './modules/tag-emulator';
 
-const DOOR = 'LT2 Door A';
+const DOORS = TagEmulator.getDoors();
 
 const UNAVAILABLE: Partial<Record<NfcStatus, string>> = {
   'no-nfc': 'This phone has no NFC, so it cannot act as the door tag.',
@@ -44,8 +44,14 @@ export default function App() {
 
   const unavailable = UNAVAILABLE[status.nfc];
 
+  const selectDoor = (doorId: string) => {
+    if (doorId === status.door.id) return;
+    setStatus(TagEmulator.selectDoor(doorId));
+    setLastReplayed(false);
+  };
+
   const confirmReset = () =>
-    Alert.alert('Reset counter?', 'The next read serves counter 42 again.', [
+    Alert.alert('Reset counter?', `The next read from ${status.door.label} serves counter 42 again.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Reset',
@@ -61,7 +67,7 @@ export default function App() {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <StatusBar style="light" />
       <Text style={styles.app}>Attend Tag</Text>
-      <Text style={styles.door}>{DOOR}</Text>
+      <Text style={styles.door}>{status.door.label}</Text>
 
       {unavailable ? (
         <Text style={styles.warning}>{unavailable}</Text>
@@ -69,7 +75,30 @@ export default function App() {
         <>
           {status.nfc === 'off' && <Text style={styles.warning}>NFC is off. Turn it on in Settings.</Text>}
 
-          <Row label="UID" value={status.uid} />
+          <Text style={styles.section}>Act as door</Text>
+          {DOORS.map((door) => {
+            const selected = door.id === status.door.id;
+            return (
+              <Pressable
+                key={door.id}
+                onPress={() => selectDoor(door.id)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+              >
+                <Text style={[styles.label, selected && styles.selected]}>
+                  {selected ? '\u25CF ' : '\u25CB '}
+                  {door.label}
+                </Text>
+                <Text style={styles.label}>Room {door.room}</Text>
+              </Pressable>
+            );
+          })}
+
+          <Text style={styles.section}>Selected door</Text>
+          <Row label="Room" value={status.door.room} />
+          <Row label="UID" value={status.door.uid} />
+          <Row label="Key" value={status.door.key} />
           <Row label="Next counter" value={`${status.nextCounter} (${ctrHex(status.nextCounter)})`} />
           <Row
             label="Last served"
@@ -100,7 +129,7 @@ export default function App() {
           <Text style={styles.note}>Keep NFC on and this screen on and unlocked, then hold the backs of the phones together.</Text>
         </>
       )}
-      <Text style={styles.note}>The tag key in this app is a public demo key, not a secret.</Text>
+      <Text style={styles.note}>The tag keys in this app are public demo keys, not secrets.</Text>
     </ScrollView>
   );
 }
@@ -127,6 +156,8 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: (RNStatusBar.currentHeight ?? 0) + 16, paddingBottom: 32 },
   app: { color: colors.muted, fontSize: 13 },
   door: { color: colors.text, fontSize: 28, fontWeight: '600', marginTop: 2, marginBottom: 12 },
+  section: { color: colors.text, fontSize: 15, fontWeight: '600', marginTop: 16, marginBottom: 2 },
+  selected: { color: colors.text },
   warning: { color: colors.warning, fontSize: 15, marginVertical: 8 },
   row: {
     flexDirection: 'row',
@@ -138,7 +169,7 @@ const styles = StyleSheet.create({
   },
   control: { paddingVertical: 4 },
   label: { color: colors.muted, fontSize: 15 },
-  value: { color: colors.text, fontSize: 15, fontFamily: 'monospace' },
+  value: { color: colors.text, fontSize: 15, fontFamily: 'monospace', flexShrink: 1, marginLeft: 12, textAlign: 'right' },
   button: {
     marginTop: 16,
     paddingVertical: 12,

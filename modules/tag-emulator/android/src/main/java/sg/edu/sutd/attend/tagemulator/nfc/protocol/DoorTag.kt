@@ -1,8 +1,8 @@
 package sg.edu.sutd.attend.tagemulator.nfc.protocol
 
-/** Tag state that survives app restarts. */
+/** One door's tag state, which survives app restarts. */
 data class TagState(
-  val nextCounter: Int = DemoTag.FIRST_COUNTER,
+  val nextCounter: Int = DemoDoors.FIRST_COUNTER,
   val lastServedCounter: Int? = null,
   val readsServed: Int = 0,
   val lastReadAtMillis: Long? = null,
@@ -10,23 +10,22 @@ data class TagState(
   val replayArmed: Boolean = false,
 )
 
-/** Where the tag state is kept: SharedPreferences on Android, memory in the JVM check. */
+/** Where one door's tag state is kept: SharedPreferences on Android, memory in the JVM check. */
 interface TagStore {
   fun load(): TagState
   fun save(state: TagState)
 }
 
 /** What one read was served, reported to the listener. */
-data class ServedReading(val reading: TagReading, val replayed: Boolean, val atMillis: Long, val state: TagState)
+data class ServedReading(val door: Door, val reading: TagReading, val replayed: Boolean, val atMillis: Long, val state: TagState)
 
 /**
- * The door tag's counter and signing.
+ * One door's counter and signing.
  * The APDU layer calls [serve] once per read; the app screen calls the other methods.
  */
 class DoorTag(
+  val door: Door,
   private val store: TagStore,
-  private val uid: String = DemoTag.UID,
-  private val keyHex: String = DemoTag.DEMO_KEY_HEX,
   private val clock: () -> Long = System::currentTimeMillis,
 ) {
   @Volatile var listener: ((ServedReading) -> Unit)? = null
@@ -50,7 +49,7 @@ class DoorTag(
         replayArmed = false,
       )
       store.save(state)
-      ServedReading(TagReading.sign(uid, counter, keyHex), replay, now, state)
+      ServedReading(door, TagReading.sign(door.uid, counter, door.keyHex), replay, now, state)
     }
     listener?.invoke(served)
     return served
